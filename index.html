@@ -58,6 +58,8 @@
           });
         }
 
+        var numRetries = 0;
+
         function buildBubbleChart(uid) {
           var diameter = 960,
               format = d3.format(",d"),
@@ -68,12 +70,17 @@
               .size([diameter, diameter])
               .padding(1.5);
 
-          d3.json("http://rec-svc.stg.ec2.nytimes.com/?uid=" + uid, function(error, root) {
+          d3.json("/user_prefs?uid=" + uid, function(error, root) {
             if (error) {
               console.log("There was an error loading the user data for user " + uid);
-              showRandomUser();
+              numRetries++;
+              if (numRetries < 10) {
+                showRandomUser();
+              };
               return;
-            };            
+            } else {
+              numRetries = 0;
+            }
 
             var svg = d3.select("#container").append("svg")
               .attr("width", diameter)

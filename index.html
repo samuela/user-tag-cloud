@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+
+<!-- Pilfered from http://bl.ocks.org/mbostock/4063269 -->
+
+<html>
+
+  <head>
+    <title>User Topic Preferences</title>
+    <meta charset="utf-8">
+    <style>
+
+      text {
+        font: 10px sans-serif;
+      }
+
+      #overlay {
+        background: white;
+        z-index: 1;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+      }
+
+      #container {
+        text-align: center;
+      }
+
+    </style>
+  </head>
+
+  <body>
+
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+
+    <script type="text/javascript">
+      $(document).ready(function() {
+        // Get the list of users
+        var uids;
+        $.get("uidlist.txt", function(data) {
+          uids = data.split("\n");
+          showRandomUser();
+
+          // Show a new random user every 30 secs
+          window.setInterval(showRandomUser, 30 * 1000);
+        }).fail(function() {
+          alert("Failed to load the list of user id's.");
+        });
+
+        function showRandomUser() {
+          var uid = uids[Math.floor(Math.random() * uids.length)];
+
+          $("#overlay").fadeIn(1000, function() {
+            $("svg").detach();
+            buildBubbleChart(uid);
+          });
+        }
+
+        function buildBubbleChart(uid) {
+          var diameter = 960,
+              format = d3.format(",d"),
+              color = d3.scale.category20c();
+
+          var bubble = d3.layout.pack()
+              .sort(null)
+              .size([diameter, diameter])
+              .padding(1.5);
+
+          d3.json("http://rec-svc.stg.ec2.nytimes.com/?uid=" + uid, function(error, root) {
+            if (error) {
+              console.log("There was an error loading the user data for user " + uid);
+              showRandomUser();
+              return;
+            };            
+
+            var svg = d3.select("#container").append("svg")
+              .attr("width", diameter)
+              .attr("height", diameter)
+              .attr("class", "bubble")
+              .style("opactiy", 0);
+
+            var node = svg.selectAll(".node")
+                .data(bubble.nodes(getBubbleNodes(root.des_facet))
+                .filter(function(d) { return !d.children; }))
+              .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+            node.append("title")
+                .text(function(d) { return d.name + ": " + format(d.value); });
+
+            node.append("circle")
+                .attr("r", function(d) { return d.r; })
+                .style("fill", function(d) { return color(d.name); });
+
+            node.append("text")
+                .attr("dy", ".3em")
+                .style("text-anchor", "middle")
+                .text(function(d) { return d.name.substring(0, d.r / 3); });
+
+            // Fade chart in
+            $("#overlay").fadeOut(1000);
+          });
+
+          function getBubbleNodes(root) {
+            var tags = [];
+
+            root.forEach(function(section) {
+              tags.push({name: section.name, value: section.count});
+            });
+
+            return {children: tags};
+          }
+
+          d3.select(self.frameElement).style("height", diameter + "px");
+        }
+      });
+    </script>
+
+
+    <div id="overlay"></div>
+    <div id="container"></div>
+
+  </body>
+</html>

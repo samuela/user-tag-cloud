@@ -96,12 +96,11 @@
             var svg = d3.select("#container").append("svg")
               .attr("width", diameter)
               .attr("height", diameter)
-              .attr("class", "bubble")
-              .style("opactiy", 0);
+              .attr("class", "bubble");
 
             var node = svg.selectAll(".node")
                 .data(bubble.nodes(getBubbleNodes(root.des_facet))
-                .filter(function(d) { return !d.children; }))
+                            .filter(function(d) { return !d.children; }))
               .enter().append("g")
                 .attr("class", "node")
                 .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
